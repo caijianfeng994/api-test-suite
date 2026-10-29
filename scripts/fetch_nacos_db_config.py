@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""从测试站 Nacos Open API 解析 PostgreSQL 连接（sensitive / DataId=dict）。
+"""从 Nacos Open API 解析 PostgreSQL 连接。
 
-对齐 nacos-vscode-env-sync：login → namespace=sensitive → GET dict。
-禁止 Playwright，禁止用集群内 DNS 打 HTTP。
+地址、命名空间和 DataId 由环境变量提供。禁止 Playwright，禁止用集群内 DNS 打 HTTP。
 """
 
 from __future__ import annotations
@@ -104,7 +103,7 @@ def resolve_nacos_postgres(
     if not fetched.get("ok"):
         payload = {
             "ok": False,
-            "error": "Nacos 未拉到 sensitive dict（Group 拼写均空或接口失败）",
+            "error": "Nacos 未拉到数据库配置（Group 拼写均空或接口失败）",
             "service_name": service_name,
             "source": "nacos",
             "nacos_attempts": fetched.get("attempts") or [],
@@ -125,7 +124,7 @@ def resolve_nacos_postgres(
     if not block:
         payload = {
             "ok": False,
-            "error": "Nacos dict 中未找到可连接的明文 postgres（PG_HOST/PG_DB/PG_PASSWORD）",
+            "error": "Nacos 配置中未找到可连接的明文 postgres（PG_HOST/PG_DB/PG_PASSWORD）",
             "service_name": service_name,
             "source": "nacos",
             "nacos_group": fetched.get("group"),
@@ -145,10 +144,10 @@ def resolve_nacos_postgres(
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="从测试站 Nacos 读取 PostgreSQL 配置")
+    parser = argparse.ArgumentParser(description="从 Nacos 读取 PostgreSQL 配置")
     parser.add_argument("--service-name", required=True)
     parser.add_argument("--group", help="覆盖 Nacos Group，默认服务名及拼写变体")
-    parser.add_argument("--nacos-account", help="覆盖 NACOS_SD_ACCOUNT，默认 nacos")
+    parser.add_argument("--nacos-account", help="覆盖 NACOS_SD_ACCOUNT")
     parser.add_argument("--nacos-password", help="覆盖 NACOS_SD_PASSWD")
     parser.add_argument("--output", "-o", help="写入 JSON（含 uri，勿上传 GitLab）")
     parser.add_argument("--redact", action="store_true", help="stdout 脱敏密码")

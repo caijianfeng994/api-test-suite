@@ -1,6 +1,6 @@
 # 查库造数与写后断言
 
-需要真实业务 ID 或写操作落库校验时，**先从 GitLab 服务仓读数据库连接**；仓内没有明文 postgres（仅 `${PG_*}` 占位、文件缺失或项目解析失败）时，**再用测试站 Nacos Open API 拉 `sensitive` / `DataId=dict`**。禁止猜测 host/密码，禁止 INSERT / UPDATE / DELETE / DDL，禁止 Playwright / 浏览器操作 Nacos。
+需要真实业务 ID 或写操作落库校验时，**先从 GitLab 服务仓读数据库连接**；仓内没有明文 postgres（仅 `${PG_*}` 占位、文件缺失或项目解析失败）时，**再用 Nacos Open API 补齐**。GitLab 地址、Nacos 地址、命名空间和 DataId 只从环境变量读取，Skill 不内置。禁止猜测 host/密码，禁止 INSERT / UPDATE / DELETE / DDL，禁止 Playwright / 浏览器操作 Nacos。
 
 查询实现复制自 `traffic-investment/scripts/verify_db.py` 的 `_run_sql`（`SQLDatabase.from_uri` + 只读事务）和 `db_agent.py`。**不复制** `ensure_traffic_partition.py`（含 `CREATE TABLE`）。
 
@@ -47,16 +47,15 @@ python3 "$SCRIPT_DIR/db_readonly.py" --config "<run_dir>/db-config.json" query \
 
 GitLab 项目路径不是 `backend/<service>` 时加 `--gitlab-path`。GitLab 认证使用 `.env` 的 `GITLAB_PRIVATE_TOKEN`。
 
-Nacos 回退认证使用 `.env` 的 `NACOS_SD_ACCOUNT`（缺省 `nacos`）与 **`NACOS_SD_PASSWD`（必填，禁止写进 Skill）**。可用 `NACOS_PASSWORD` / `--nacos-password` 覆盖。只连 `https://nacos.yc345.tv`，禁止 `nacos.ops.svc.cluster.local`。仅调试 GitLab、不要回退时加 `--no-nacos`。
+Nacos 回退必须设置 `NACOS_OPEN_API_HOST`、`NACOS_NAMESPACE_NAME`、`NACOS_DATA_ID`、`NACOS_SD_ACCOUNT` 与 **`NACOS_SD_PASSWD`**。GitLab 拉库必须设置 `GITLAB_API_BASE` 与 `GITLAB_PRIVATE_TOKEN`。以上均无默认值，禁止写进 Skill。可用 `NACOS_PASSWORD` / `--nacos-password` 覆盖密码。禁止使用集群内 DNS。仅调试 GitLab、不要回退时加 `--no-nacos`。
 
 ## 配置来源优先级
 
 1. GitLab `configs/local.yaml` → `development.yaml` → `test.yaml` → `default.yaml`。只采用 **host / db / password 均为明文** 的块。
 2. 上述文件只有 `${PG_HOST}` 等占位、或缺文件 / 项目无法解析 → Nacos Open API：
-   - `POST /nacos/v1/auth/login`
-   - `GET /nacos/v1/console/namespaces`，取展示名 `sensitive` 的 namespaceId 作 tenant
-   - `GET /nacos/v1/cs/configs`，`dataId=dict`，Group 首选 `configs/default.yaml` 的 `name`，再试 `-`↔`_` 与去连字符
-   - 用 yaml 里的 `${PG_*}` 名称（或扁平 `PG_HOST` / `PG_PORT` / `PG_USER` / `PG_PASSWORD` / `PG_DB`）从 dict 取值
+   - 使用 `NACOS_OPEN_API_HOST` 登录，按 `NACOS_NAMESPACE_NAME` 取 namespaceId
+   - 按 `NACOS_DATA_ID` 读取配置，Group 首选 `configs/default.yaml` 的 `name`，再试 `-`↔`_` 与去连字符
+   - 用 yaml 里的 `${PG_*}` 名称（或扁平 `PG_HOST` / `PG_PORT` / `PG_USER` / `PG_PASSWORD` / `PG_DB`）取值
 3. `${PG_HOST}` 已在当前环境导出时，仍可在 GitLab 解析阶段展开，不必打 Nacos。
 
 配置解析必须覆盖两种形态：
@@ -65,7 +64,7 @@ Nacos 回退认证使用 `.env` 的 `NACOS_SD_ACCOUNT`（缺省 `nacos`）与 **
 - PostgreSQL URI：`PG_SOURCE`、`POSTGRES_SOURCE`、`DATABASE_URL`，支持 `postgres://` 与
   `postgresql://`，从 URI 提取 host、port、user、password、db、sslmode。
 
-配置只暴露 `${PG_SOURCE}` 等变量名时，必须继续从 Nacos dict 取 URI 实值并解析，不能因为没有
+配置只暴露 `${PG_SOURCE}` 等变量名时，必须继续从 Nacos 配置取 URI 实值并解析，不能因为没有
 `PG_HOST` 独立字段就记为 `service_db_unmapped`。连接前先输出脱敏后的 source、host、port、db；
 不得在报告、日志或 fixture 中保留 URI、密码明文。
 

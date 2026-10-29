@@ -24,7 +24,6 @@ SSL_CTX = ssl._create_unverified_context()
 
 DEFAULT_MCP_URL = "http://yapi-common-mcp.7to12/mcp"
 DEFAULT_BASE_URL = "https://yapi-test.yc345.tv"
-DEFAULT_CLUSTER_DNS = "10.8.8.89"
 
 
 def env_or(name: str, default: str) -> str:
@@ -83,7 +82,9 @@ def resolve_hostname(hostname: str, cluster_dns: str | None = None) -> tuple[str
         return hostname, "system-dns"
     except OSError:
         pass
-    dns = (cluster_dns or env_or("YAPI_CLUSTER_DNS", DEFAULT_CLUSTER_DNS)).strip()
+    dns = (cluster_dns or os.getenv("YAPI_CLUSTER_DNS") or "").strip()
+    if not dns:
+        raise RuntimeError("缺少环境变量 YAPI_CLUSTER_DNS。Skill 不内置集群 DNS 地址。")
     ip = _dns_a_query(hostname, dns)
     if not ip:
         raise RuntimeError(

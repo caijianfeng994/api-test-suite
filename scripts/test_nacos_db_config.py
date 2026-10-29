@@ -89,7 +89,7 @@ class NacosDictTests(unittest.TestCase):
         text = """
 postgres:
   good:
-    host: 10.8.8.9
+    host: 192.0.2.10
     port: 5411
     user: postgres
     password: hidden
@@ -97,7 +97,7 @@ postgres:
 """
         block = pick_block(parse_postgres_blocks(text), "good")
         assert block is not None
-        self.assertEqual(block["host"], "10.8.8.9")
+        self.assertEqual(block["host"], "192.0.2.10")
 
     def test_group_spellings(self) -> None:
         names = group_spellings("redeem-code")

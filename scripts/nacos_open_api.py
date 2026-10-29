@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""测试站 Nacos Open API 只读客户端。
+"""Nacos Open API 只读客户端。
 
-Host 固定 `nacos.yc345.tv`，禁止用 `nacos.ops.svc.cluster.local` 打 HTTP。
-禁止 Playwright / 浏览器。accessToken 只留在内存，不得写入产物。
+地址、命名空间和 DataId 只从环境变量读取，Skill 不内置。
+禁止使用集群内 DNS，禁止 Playwright / 浏览器。accessToken 只留在内存，不得写入产物。
 """
 
 from __future__ import annotations
@@ -23,17 +23,29 @@ if str(SCRIPT_DIR) not in sys.path:
 
 from internal_http import open_url  # noqa: E402
 
-DEFAULT_NACOS_HOST = "https://nacos.yc345.tv"
-DEFAULT_NAMESPACE_NAME = "sensitive"
-DEFAULT_DATA_ID = "dict"
 SSL_CTX = ssl._create_unverified_context()
 
 
+def _required_env(name: str, explicit: str | None = None) -> str:
+    value = (explicit or os.environ.get(name) or "").strip()
+    if not value:
+        raise ValueError(f"缺少环境变量 {name}。Skill 不内置数据库地址或配置项名称。")
+    return value
+
+
 def api_host() -> str:
-    raw = (os.environ.get("NACOS_OPEN_API_HOST") or DEFAULT_NACOS_HOST).strip().rstrip("/")
-    if "ops.svc.cluster.local" in raw:
-        raise ValueError("Open API 禁止使用 nacos.ops.svc.cluster.local，请用 nacos.yc345.tv")
+    raw = _required_env("NACOS_OPEN_API_HOST").rstrip("/")
+    if "svc.cluster.local" in raw:
+        raise ValueError("Open API 禁止使用集群内 DNS，请设置对外可达的 NACOS_OPEN_API_HOST")
     return raw
+
+
+def namespace_name(explicit: str | None = None) -> str:
+    return _required_env("NACOS_NAMESPACE_NAME", explicit)
+
+
+def config_data_id(explicit: str | None = None) -> str:
+    return _required_env("NACOS_DATA_ID", explicit)
 
 
 def credentials(
@@ -45,8 +57,12 @@ def credentials(
         or (os.environ.get("NACOS_SD_ACCOUNT") or "").strip()
         or (os.environ.get("NACOS_USERNAME") or "").strip()
         or (os.environ.get("NACOS_ACCOUNT") or "").strip()
-        or "nacos"
     )
+    if not user:
+        raise ValueError(
+            "缺少 Nacos 账号。请设置 NACOS_SD_ACCOUNT（或 NACOS_USERNAME），"
+            "或传 --nacos-account。禁止写入默认账号。"
+        )
     passwd = (
         (password or "").strip()
         or (os.environ.get("NACOS_SD_PASSWD") or "").strip()
@@ -104,7 +120,8 @@ def login(username: str, password: str) -> str:
     return str(token)
 
 
-def resolve_namespace_id(token: str, show_name: str = DEFAULT_NAMESPACE_NAME) -> tuple[str, str]:
+def resolve_namespace_id(token: str, show_name: str | None = None) -> tuple[str, str]:
+    show_name = namespace_name(show_name)
     url = f"{api_host()}/nacos/v1/console/namespaces"
     status, body = _request("GET", url, data={"accessToken": token}, token=token)
     if status != 200:
@@ -138,8 +155,9 @@ def get_config(
     *,
     group: str,
     tenant: str,
-    data_id: str = DEFAULT_DATA_ID,
+    data_id: str | None = None,
 ) -> str:
+    data_id = config_data_id(data_id)
     url = f"{api_host()}/nacos/v1/cs/configs"
     status, body = _request(
         "GET",
@@ -164,11 +182,13 @@ def fetch_dict(
     groups: list[str],
     username: str,
     password: str,
-    data_id: str = DEFAULT_DATA_ID,
-    namespace_name: str = DEFAULT_NAMESPACE_NAME,
+    data_id: str | None = None,
+    namespace: str | None = None,
 ) -> dict[str, Any]:
+    data_id = config_data_id(data_id)
+    namespace = namespace_name(namespace)
     token = login(username, password)
-    tenant, ns_name = resolve_namespace_id(token, namespace_name)
+    tenant, ns_name = resolve_namespace_id(token, namespace)
     attempts: list[dict[str, Any]] = []
     chosen: dict[str, Any] | None = None
     for group in groups:

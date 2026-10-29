@@ -88,7 +88,7 @@ python .claude/skills/api-test-suite/scripts/fetch_yapi_interface.py \
   --output "<run_dir>/yapi-ping.json"
 ```
 
-脚本默认连 `http://yapi-common-mcp.7to12/mcp`。系统 DNS 解析不了 `.7to12` 时，自动向 `YAPI_CLUSTER_DNS`（默认 `10.8.8.89`）查 A 记录并以 IP 回退。`YAPI_GLOBAL_TOKEN` 必填，Skill 不内置 token。可用 `YAPI_COMMON_MCP_URL` / `YAPI_BASE_URL` 覆盖地址。
+脚本默认连 `http://yapi-common-mcp.7to12/mcp`。系统 DNS 解析不了 `.7to12` 时，向 `YAPI_CLUSTER_DNS` 查 A 记录并以 IP 回退；该变量必填，Skill 不内置集群 DNS。`YAPI_GLOBAL_TOKEN` 必填，Skill 不内置 token。可用 `YAPI_COMMON_MCP_URL` / `YAPI_BASE_URL` 覆盖地址。
 
 `.7to12` / `.yc345.tv` 等集群地址由 `scripts/internal_http.py` 强制直连，不走系统代理（走代理会拿到 502）。需要额外直连后缀时用 `API_TEST_SUITE_DIRECT_SUFFIXES` 逗号分隔追加。新增 stdlib HTTP 调用必须用 `open_url`，不得直接 `urlopen`。
 

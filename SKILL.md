@@ -1,6 +1,6 @@
 ---
 name: api-test-suite
-description: Use when independently running functional API regression, refactor baseline/replay, migration dual-run comparison, or contract-driven API test-case design. Discovery connects YApi first, then keeps only paths present in the GitLab service proto files and not marked offline in handler code. Missing fixtures follow create-API then readonly service DB then bundled web_cli Shadow/admin data collection. DB connection comes from the GitLab service repo, falling back to the test Nacos Open API sensitive dict.
+description: Use when independently running functional API regression, refactor baseline/replay, migration dual-run comparison, or contract-driven API test-case design. Discovery connects YApi first, then keeps only paths present in the GitLab service proto files and not marked offline in handler code. Missing fixtures follow create-API then readonly service DB then bundled web_cli Shadow/admin data collection. DB connection comes from the GitLab service repo, falling back to Nacos Open API. Hosts and config names come from environment variables.
 ---
 
 # 统一接口测试套件
@@ -16,7 +16,7 @@ description: Use when independently running functional API regression, refactor 
 - `migration`：旧服务与新服务同时在线双跑比对；两侧分别走同一套保留规则（含下线过滤）
 - 契约设计：`run_mode=contract`，从契约/目录生成可追溯用例文档，**默认不执行、不造数**
 - 夹具补齐：造数工具不支持的场景 → 服务库只读查询（`reference/db-query.md`）→ 库仍缺失则用内嵌 `web_cli/` 打开 Shadow / onion-backstage 取后台数据（`reference/fixture-fallback.md`）
-- 查库连接：先从 GitLab 服务仓解析测试库；仓内只有 `${PG_*}` 占位或拉不到明文时，用测试站 Nacos Open API 拉 `sensitive` / `DataId=dict` 补齐，再只读查表
+- 查库连接：先从 GitLab 服务仓解析测试库；仓内只有 `${PG_*}` 占位或拉不到明文时，用 Nacos Open API 补齐，再只读查表。地址与配置项名称见 `.env.example`，Skill 不内置
 
 原 `api-contract-to-test-cases` 能力已并入本套件的 `core/contract` 与 `run_mode=contract`，勿再单独调用外部契约 Skill。
 

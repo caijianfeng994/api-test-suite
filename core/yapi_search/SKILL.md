@@ -23,7 +23,7 @@ python .claude/skills/api-test-suite/scripts/fetch_yapi_interface.py --ping --ou
 python .claude/skills/api-test-suite/scripts/fetch_yapi_interface.py --url "<YApi 接口链接>" --output "<run_dir>/yapi-raw.json"
 ```
 
-脚本连接 `yapi-common-mcp`。本机系统 DNS 无法解析 `yapi-common-mcp.7to12` 时，会向集群 DNS（默认 `10.8.8.89`，可用 `YAPI_CLUSTER_DNS` 覆盖）查 A 记录并改用 IP。集群地址由 `scripts/internal_http.py` 强制绕过系统代理，`502 Bad Gateway` 通常说明请求被代理截走。不要改去调用 `locust-skills-ui` 或 `backend/tests/services/test_yapi_mcp.py` 作为主路径。
+脚本连接 `yapi-common-mcp`。本机系统 DNS 无法解析 `yapi-common-mcp.7to12` 时，会向 `YAPI_CLUSTER_DNS` 查 A 记录并改用 IP。该变量必填，Skill 不内置集群 DNS。集群地址由 `scripts/internal_http.py` 强制绕过系统代理，`502 Bad Gateway` 通常说明请求被代理截走。不要改去调用 `locust-skills-ui` 或 `backend/tests/services/test_yapi_mcp.py` 作为主路径。
 
 ## 工具能力
 

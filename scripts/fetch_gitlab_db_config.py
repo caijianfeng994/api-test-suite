@@ -5,7 +5,7 @@
 配置文件优先级：local.yaml → development.yaml → test.yaml → default.yaml。
 含 `${ENV}` 占位且无明文 host 的条目跳过，除非当前环境已导出对应变量。
 
-GitLab 无明文 postgres 时，回退测试站 Nacos Open API（sensitive / DataId=dict）。
+GitLab 无明文 postgres 时，回退 Nacos Open API。地址与配置项名称只来自环境变量。
 """
 
 from __future__ import annotations
@@ -38,8 +38,14 @@ from db_readonly import uri_from_parts  # noqa: E402
 from fetch_nacos_db_config import resolve_nacos_postgres  # noqa: E402
 from internal_http import open_url  # noqa: E402
 
-API_BASE = "https://gitlab.yc345.tv/api/v4"
 SSL_CTX = ssl._create_unverified_context()
+
+
+def gitlab_api_base() -> str:
+    raw = (os.environ.get("GITLAB_API_BASE") or "").strip().rstrip("/")
+    if not raw:
+        raise RuntimeError("缺少环境变量 GITLAB_API_BASE。Skill 不内置 GitLab 地址。")
+    return raw
 CONFIG_FILES = (
     "configs/local.yaml",
     "configs/development.yaml",
@@ -70,7 +76,7 @@ def gitlab_get(path: str) -> tuple[int, str]:
     token = gitlab_token()
     if not token:
         raise RuntimeError("缺少 GITLAB_PRIVATE_TOKEN / GITLAB_TOKEN")
-    url = API_BASE + path
+    url = gitlab_api_base() + path
     req = urllib.request.Request(url, headers={"PRIVATE-TOKEN": token})
     try:
         with open_url(req, timeout=30, context=SSL_CTX) as resp:

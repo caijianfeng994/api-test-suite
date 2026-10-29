@@ -89,7 +89,7 @@
 
 ## 第 2 步：服务数据库
 
-按 `reference/db-query.md`：GitLab 服务仓解析测试库连接，无明文则 Nacos `sensitive` / `DataId=dict`，再用 `db_readonly.py` / `db_agent.py` 只读查询。
+按 `reference/db-query.md`：GitLab 服务仓解析测试库连接，无明文则按环境变量回退 Nacos，再用 `db_readonly.py` / `db_agent.py` 只读查询。
 
 - 查到记录：`sources` 写 `db:<service>.<table>.<column>`，回填请求同名字段。
 - 库可连但无匹配行、表对不上字段、或 `service_db_unmapped`：**进入第 3 步**，不得伪造行。
