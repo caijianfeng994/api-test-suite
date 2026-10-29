@@ -8,7 +8,7 @@
 - [ ] `test-cases.json` 中默认无 `category=smoke`（除非用户显式要求连通性探测）
 - [ ] 若存在 smoke：报告有「冒烟探测说明（非正式完整覆盖）」章节，且用例名带「【冒烟探测】」
 - [ ] 每接口至少：functional + validation；auth 按三态：`called_by_app`/`unknown`/缺字段必须有 auth，仅完整 `not_called_by_app` 可省略；全部请求字段默认必填；error/side_effect/list 按 `reference/regression-case-semantics.md`（无资源 ID 禁止「不存在→4xx」）
-- [ ] `endpoint_bindings` 未「部分绑定收工」：请求 schema 声明字段相对绑定键的差集已清空；数据库和后台均无现有数据时已实际调用创建 API、造数脚本、`ops-ass` 或后台创建页面。仍 pending 的字段带造数失败结果、字段级 `SELECT`、`execution/web-cli/` 证据。catalog/菜单文档检索和「无造数脚本」不算完成
+- [ ] `endpoint_bindings` 未「部分绑定收工」：请求 schema 声明字段相对绑定键的差集已清空；数据库和后台均无现有数据时已实际调用创建 API、造数脚本、`web_cli/SKILL.md` 或后台创建页面。仍 pending 的字段带造数失败结果、字段级 `SELECT`、`execution/web-cli/` 证据。catalog/菜单文档检索和「无造数脚本」不算完成
 - [ ] 同一 DB 行已取主键/外键时，同行业务列（如 `push_purchase` 的 worker_name/avatar/kind/fenqi/add_content）已同查同回填
 - [ ] 无 `required_binding_missing` 却缺少 fixtures 三步证据的「漏补」用例（`validate_run` 会失败）
 - [ ] 夹具三步无真值的字段已按 `reference/code-request-values.md` 核对处理函数：字面量或透传文案来源为 `code:`，未读取字段为 `code_unused`

@@ -15,22 +15,20 @@ description: Use when api-test-suite must prepare fixtures, bind required reques
 
 完整规则见 `reference/fixture-fallback.md`。
 
-1. **造数工具**：用户夹具、已授权创建/查询 API，以及 `web_cli/ops-ass/SKILL.md` 所指的业务造数工具。本套件不附带具体造数场景。状态不对时用创建给下游供数，且成功路径独立种子（`reference/fixture-fallback.md`）。工具不覆盖当前场景时不得结束。
+1. **造数工具**：用户夹具、已授权创建/查询 API，以及 `web_cli/SKILL.md`。本套件不附带造数工具或脚本。状态不对时用创建给下游供数，且成功路径独立种子（`reference/fixture-fallback.md`）。工具不覆盖当前场景时不得结束。
 2. **删除/更新主键**：同 path 有 `POST` 创建或 `GET` 获取/列表时，先创建再获取主键，两步都不满足才查库。来源写 `api:`；查库必须是 `db:<service>.<table>.<column>`，并在 `resource_seed_attempts` 留下创建/获取的 `failed|blocked`。禁止用库里其它列当主键。
 3. **服务数据库**：`reference/db-query.md`。只读；无匹配行则进入下一步。资源主键不适用「先于创建/获取查库」。
-4. **后台取数**：读取并执行本套件 `web_cli/SKILL.md`（Shadow / onion-backstage）。禁止改用仓库根目录 `web_cli`。菜单文档没有服务名时仍要打开后台或抓后台接口，禁止把 `shadow_path_lookup` 当成取数完成。
+4. **后台取数**：读取 `web_cli/SKILL.md`，按业务场景造数。本套件不附带后台登录或菜单脚本。
 
-数据库和后台都拿不到现有数据时，必须使用同资源创建 API、造数脚本、`ops-ass` 或后台创建页面实际造数；创建成功就回填并继续执行。实际造数仍失败或被环境阻断后，按 `reference/code-request-values.md` 读处理函数补代码字面量、透传文案，或把未读取字段标 `code_unused`。三种情况都不成立时，按 `reference/binding-log-supplement.md` 查近 30 天线上访问日志补请求值。日志给出非空且非敏感的值就回填；确认字段未出现、path 无调用，或敏感字段不能抄明文，才写 `required_binding_missing` 且 `executable=false`。每条 pending attempt 必须能被 `validate_run.py` 复核：造数目标和 `failed|blocked` 结果、字段级 `SELECT`、`execution/web-cli/` 证据文件加 `opened_url` 或 `captured_api`。只写步骤名、catalog 扫描或查询接口会 `fixture leak`。
+数据库和后台都拿不到现有数据时，必须使用同资源创建 API、造数脚本、`web_cli/SKILL.md` 或后台创建页面实际造数；创建成功就回填并继续执行。实际造数仍失败或被环境阻断后，按 `reference/code-request-values.md` 读处理函数补代码字面量、透传文案，或把未读取字段标 `code_unused`。三种情况都不成立时，按 `reference/binding-log-supplement.md` 查近 30 天线上访问日志补请求值。日志给出非空且非敏感的值就回填；确认字段未出现、path 无调用，或敏感字段不能抄明文，才写 `required_binding_missing` 且 `executable=false`。每条 pending attempt 必须能被 `validate_run.py` 复核：造数目标和 `failed|blocked` 结果、字段级 `SELECT`、`execution/web-cli/` 证据文件加 `opened_url` 或 `captured_api`。只写步骤名、catalog 扫描或查询接口会 `fixture leak`。
 
 ## C 端网关鉴权夹具
 
 当 `run-context.base_urls.target`（或用例 `base_url`）指向公网网关（`7to12-*.yangcong345.com/backend` 等），且成功路径需要登录态时：
 
-1. 先用业务造数工具解析真实 C 端 `userId`（见 `web_cli/ops-ass/SKILL.md`，或已有 fixture），**禁止**用 Shadow 登录邮箱账号冒充。
-2. 按 `reference/c-end-auth.md` 换票：
-   - 优先 `web_cli/tokenUtil.getAppToken(user_id, env="test")`
-   - 或 `scripts/fetch_c_end_auth.py --user-id ... --env test`
-3. 回填 `shared.uid` / 请求头 `uid`，以及执行期 `Authorization`（推荐环境变量 `API_TEST_AUTHORIZATION`，`sources` 写 `api:tokenUtil.getAppToken` 或 `env:API_TEST_AUTHORIZATION`）。
+1. 按 `web_cli/SKILL.md` 用业务造数工具解析真实 C 端 `userId`，或使用已有 fixture。
+2. 登录态按 `reference/c-end-auth.md` 注入，用例使用 `${API_TEST_AUTHORIZATION}`。
+3. 回填 `shared.uid` / 请求头 `uid`，以及执行期 `Authorization`（`sources` 写 `env:API_TEST_AUTHORIZATION`）。
 4. 完整 JWT **不得**写入将上传 GitLab 的 `test-cases.json`；可写入本机 `execution/c-end-auth.json` 的脱敏摘要。
 
 ## 禁止部分绑定收工（P0，防漏补）
@@ -63,6 +61,6 @@ description: Use when api-test-suite must prepare fixtures, bind required reques
 - 对数据库执行写语句
 - 因造数工具不支持就跳过查库和后台
 - 用 `no_dedicated_fixture_factory`、无 SQL 的「已查相关表」、`shadow_path_lookup` 凑满三步名称后标缺参
-- 数据库和 Shadow 都没有现有数据时，不调用创建 API、造数脚本、`ops-ass` 或后台创建页面就直接标缺参
+- 数据库和 Shadow 都没有现有数据时，不调用创建 API、造数脚本、`web_cli/SKILL.md` 或后台创建页面就直接标缺参
 - 把 Cookie / token 写入将上传 GitLab 的用例文档
 - 把 `all` / `unlimited` / 枚举名填进「有值须为 http(s)」的分层/URL 字段

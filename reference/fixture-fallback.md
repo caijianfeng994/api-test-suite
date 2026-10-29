@@ -25,7 +25,7 @@
 3. **同行字段一次性取全**：对同一表同一行（例：`push_purchase` 已取 `worker_id`），同一次 SQL 选出并回填 `worker_name`、`worker_avatar`、`kind`（→`category`）、`fenqi`（→`installmentPayType`）、`show_in_card`、`add_content` 等映射列。
 4. **pending 必须可审计**：`pending_requirements[]` 每项至少含 `endpoint_id`、`field`（如 `body.category`）、`attempts`。三步都要留下可复核动作，不能只写步骤名。
 5. **`validate_run.py` 门禁**：用例出现 `required_binding_missing:*` 时，对应字段的 attempts 必须同时满足下面三条，否则报 `fixture leak` 且不得 `status=completed`：
-   - `tool`：必须实际调用创建 API、造数脚本、`ops-ass` 或后台创建动作，并记录造数目标、`status=failed|blocked` 与结果。仅查询、catalog 扫描、`checked_endpoints` 或 `no_dedicated_fixture_factory` 都不算造数。
+   - `tool`：必须实际调用创建 API、造数脚本、`web_cli/SKILL.md` 或后台创建动作，并记录造数目标、`status=failed|blocked` 与结果。仅查询、catalog 扫描、`checked_endpoints` 或 `no_dedicated_fixture_factory` 都不算造数。
    - `db`：记录针对该字段的只读 `sql`（必须是 `SELECT`），并在 SQL 或结果中点名字段。
    - `web_cli`：记录 `opened_url` 或 `captured_api`，并有 `<run_dir>/execution/web-cli/` 下的非空证据文件。文件内容要能看到打开的页面或抓到的后台接口。
 
@@ -61,7 +61,7 @@
 
 第 1 步失败必须写入 `fixtures.json` 的 `pending_requirements` 或 `execution/healing-log.json`，说明「工具不支持 / 调用失败」及已尝试路径。**禁止**在此步直接记 `required_binding_missing` 结束。
 
-“没有专用造数脚本”不等于不支持造数。必须继续扫描同资源族的 `POST` 创建接口；存在创建接口时，按契约构造请求并实际调用。没有服务创建接口时，继续检查本套件 `ops-ass` 和 Shadow 对应资源的创建页面。
+“没有专用造数脚本”不等于不支持造数。必须继续扫描同资源族的 `POST` 创建接口；存在创建接口时，按契约构造请求并实际调用。没有服务创建接口时，继续检查本套件 `web_cli/SKILL.md` 和 Shadow 对应资源的创建页面。
 
 ## 删除 / 更新的资源主键（先创建、再获取，最后才查库）
 
@@ -99,9 +99,7 @@
 
 **REQUIRED SUB-SKILL:** 本目录 `web_cli/SKILL.md`（不要用仓库根 `.claude/skills/web_cli/`）。
 
-1. 读 `web_cli/shadow-path/SKILL.md`，按服务与缺数字段选菜单（组合商品、SKU、订单、用户、审核等）。菜单表没有该服务名字，只说明索引未覆盖，**不得结束本步**。
-2. 读 `web_cli/playwright-cli/SKILL.md`，用 `playwright-cli` 打开测试环境 Shadow / onion-backstage；已有可用 session 则复用。
-3. 页面查询；字段不够则用 Shadow 登录态抓对应后台接口。业务配置页不在菜单索引时，从已打开后台的 Network 找该服务的 shadow/admin 列表或详情接口继续取数。
+1. 读 `web_cli/SKILL.md`，根据业务场景造数。本套件不附带后台登录、菜单或换票脚本。
 4. 只回填**请求 schema 已有**字段；响应独有字段不得塞进请求 body。
 5. `sources` 写 `web_cli:shadow:<一级/二级/三级菜单或路径>`。每个仍缺的字段在 attempt 中写 `opened_url` 或 `captured_api`，证据文件放 `<run_dir>/execution/web-cli/`。
 
@@ -113,11 +111,11 @@
 
 枚举、分页和代码默认值（如 `grade`、`scene`、`pad`、`page`、`limit`、`state`）从契约枚举或实现默认值绑定，不进入「没有造数」流程。
 
-后台页面和后台接口都取不到现有数据时，必须回到造数步骤，使用同资源创建 API、造数脚本、`ops-ass` 或后台创建页面生成独立测试数据。创建成功后回填新 ID/完整请求字段并继续执行。创建实际失败或被环境能力阻断后，仍须按 `reference/code-request-values.md` 读处理函数：代码字面量、无校验透传文案或 `code_unused` 可以收口。三种情况都不成立时，按 `reference/binding-log-supplement.md` 查该 path 近 30 天线上访问日志补请求值。日志给出非空且非敏感的值就回填并继续执行。确认字段未出现、path 无调用，或敏感字段不能抄明文时，才允许该字段 `executable=false` + `required_binding_missing:<位置>.<字段>`，并在报告写明造数目标及失败结果、SQL、打开的 URL，以及 `execution/binding-log-supplement.json`。
+后台页面和后台接口都取不到现有数据时，必须回到造数步骤，使用同资源创建 API、造数脚本、`web_cli/SKILL.md` 或后台创建页面生成独立测试数据。创建成功后回填新 ID/完整请求字段并继续执行。创建实际失败或被环境能力阻断后，仍须按 `reference/code-request-values.md` 读处理函数：代码字面量、无校验透传文案或 `code_unused` 可以收口。三种情况都不成立时，按 `reference/binding-log-supplement.md` 查该 path 近 30 天线上访问日志补请求值。日志给出非空且非敏感的值就回填并继续执行。确认字段未出现、path 无调用，或敏感字段不能抄明文时，才允许该字段 `executable=false` + `required_binding_missing:<位置>.<字段>`，并在报告写明造数目标及失败结果、SQL、打开的 URL，以及 `execution/binding-log-supplement.json`。
 
 ## C 端网关 Authorization（与「后台取数」并列）
 
-缺的是**登录态 JWT**、不是业务资源 ID 时：不要走菜单点选，按 `reference/c-end-auth.md` 用 `web_cli/tokenUtil.getAppToken` 或 `scripts/fetch_c_end_auth.py` 换票。`uid` 与换票 `userId` 必须一致。集群 `.7to12` 直连且仅需 `uid` 的接口不适用本条。
+缺的是**登录态 JWT**、不是业务资源 ID 时：按 `web_cli/SKILL.md` 与 `reference/c-end-auth.md` 用业务造数工具换票。`uid` 与换票用户必须一致。
 
 ## 产物
 
@@ -132,7 +130,7 @@
 ## 禁止
 
 - 造数工具失败后跳过查库直接打开后台，或查库失败后不打开后台就标缺参
-- 把「没有专用造数脚本」或 catalog 扫描写成造数完成；同资源已有创建接口、`ops-ass` 或后台创建能力时必须实际调用
+- 把「没有专用造数脚本」或 catalog 扫描写成造数完成；同资源已有创建接口、`web_cli/SKILL.md` 或后台创建能力时必须实际调用
 - 把 `shadow-path` 文档检索写成第 3 步完成；必须打开后台或抓到后台接口
 - 把 H5 / 完整 UI 回归当成接口造数的必经步骤
 - 把后台 Cookie、token、明文手机号写入 `test-cases.json` 或上传 GitLab

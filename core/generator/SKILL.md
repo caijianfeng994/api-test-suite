@@ -81,11 +81,9 @@ python .claude/skills/api-test-suite/scripts/render_test_cases_table.py \
   `shared.uid` / `shared.userId` / `shared.user_id` 写入请求头 `uid`，**禁止**编造。
   这与 Authorization / token 鉴权头无关——空 body/空 query 的接口仍可能依赖 Header `uid`；
   负向若只省略 query/body 却不带 uid，服务会先报「用户ID不能为空」盖住契约缺参行为。
-- **Header `Authorization`（网关登录态）**：`base_url` 为 `7to12-*.yangcong345.com/backend` 等公网网关时，
-  成功路径须带用户 JWT。取值来自 `reference/c-end-auth.md`（`tokenUtil.getAppToken` /
-  `fetch_c_end_auth.py`），用例中优先 `${API_TEST_AUTHORIZATION}` 占位，**禁止**把完整 JWT
-  写进将上传 GitLab 的 case 正文。同请求还应带 `uid`、`client-version` 与环境匹配的 `Referer`
-  （缺 Referer 时网关可能 403）。集群 `.7to12` 直连且仅需 `uid` 时不要强加该头。
+- **Header `Authorization`（网关登录态）**：公网网关成功路径须带用户 JWT。
+  按 `web_cli/SKILL.md` 与 `reference/c-end-auth.md` 准备，用例中使用 `${API_TEST_AUTHORIZATION}`，
+  **禁止**把完整 JWT 写进将上传 GitLab 的 case 正文。同请求还应带 `uid` 与 `client-version`。
 
 每条用例生成时一律 `regression_ready=false`，`regression_blockers` 至少含 `execution_not_passed`；
 是否可晋升由 `regression_promotion` 在执行通过 + 证据齐全后判定，生成阶段不得声称已晋升。
